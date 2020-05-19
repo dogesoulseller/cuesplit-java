@@ -1,0 +1,22 @@
+apply plugin: 'application'
+
+dependencies {
+    compile 'log4j:log4j:1.2.17'
+    compile project(':cuelib')
+}
+
+mainClassName = 'net.dogesoulseller.cuesplit.Cuesplit'
+
+task copyLicense {
+    outputs.file new File("$buildDir/LICENSE")
+    doLast {
+        copy {
+            from "LICENSE"
+            into "$buildDir"
+        }
+    }
+}
+
+applicationDistribution.from(copyLicense) {
+    into ""
+}
