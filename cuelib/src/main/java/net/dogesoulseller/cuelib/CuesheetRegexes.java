@@ -2,6 +2,10 @@ package net.dogesoulseller.cuelib;
 
 import java.util.regex.Pattern;
 
+/**
+ * Class containing the various precompiled regexes
+ * needed to parse a cuesheet
+ */
 public class CuesheetRegexes
 {
 	public Pattern catalog;
@@ -42,6 +46,4 @@ public class CuesheetRegexes
 		remarkDate = Pattern.compile("^\\s*REM\\s+DATE\\s+.*\\s*", Pattern.CASE_INSENSITIVE);
 		remarkGenre = Pattern.compile("^\\s*REM\\s+GENRE\\s+.*\\s*", Pattern.CASE_INSENSITIVE);
 	}
-
-
 }
