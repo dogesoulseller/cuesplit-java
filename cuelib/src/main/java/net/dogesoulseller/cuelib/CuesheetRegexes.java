@@ -26,6 +26,8 @@ public class CuesheetRegexes
 	public Pattern remarkDate;
 	public Pattern remarkGenre;
 
+	public Pattern duplicateWhitespace;
+
 	public CuesheetRegexes()
 	{
 		catalog = Pattern.compile("^\\s*CATALOG\\s+\\d+\\s*", Pattern.CASE_INSENSITIVE);
@@ -45,5 +47,7 @@ public class CuesheetRegexes
 
 		remarkDate = Pattern.compile("^\\s*REM\\s+DATE\\s+.*\\s*", Pattern.CASE_INSENSITIVE);
 		remarkGenre = Pattern.compile("^\\s*REM\\s+GENRE\\s+.*\\s*", Pattern.CASE_INSENSITIVE);
+
+		duplicateWhitespace = Pattern.compile("\\s+");
 	}
 }

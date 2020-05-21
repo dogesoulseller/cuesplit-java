@@ -15,15 +15,26 @@ public class Cuesheet
 
 	private ArrayList<Pair<LineType, String>> linesInFile;
 
+	public ArrayList<net.dogesoulseller.cuelib.File> filesInCuesheet;
+
 	public Cuesheet()
 	{
+		linesInFile = new ArrayList<Pair<LineType, String>>();
+		filesInCuesheet = new ArrayList<net.dogesoulseller.cuelib.File>();
 		regexes = new CuesheetRegexes();
 	}
 
 	public Cuesheet(String cueFilePath)
 	{
+		linesInFile = new ArrayList<Pair<LineType, String>>();
+		filesInCuesheet = new ArrayList<net.dogesoulseller.cuelib.File>();
 		regexes = new CuesheetRegexes();
 		loadFile(cueFilePath);
+	}
+
+	private String trimDuplicateWhitespace(String line)
+	{
+		return regexes.duplicateWhitespace.matcher(line).replaceAll(" ");
 	}
 
 	private LineType getLineType(String line)
@@ -101,6 +112,76 @@ public class Cuesheet
 		return FileType.Invalid;
 	}
 
+	private Timespec parseTimespec(String line, LineType type)
+	{
+		String trimmedLine = trimDuplicateWhitespace(line).trim();
+
+		// Index field is xxx xx tt
+		// Other time fields are xxx tt
+		String timeFields = type == LineType.Index ? trimmedLine.split(" ")[2] : trimmedLine.split(" ")[1];
+
+		// Time fields are mm:ss:ff so the split is at :
+		String[] msfSpecs = timeFields.split(":");
+		return new Timespec(Integer.parseInt(msfSpecs[0]), Integer.parseInt(msfSpecs[1]), Integer.parseInt(msfSpecs[2]));
+	}
+
+	private String parseFileStringContents(String line, FileType fType)
+	{
+		// Remove leading and trailing whitespace
+		line = line.trim();
+
+		// Remove file type specifier
+		switch (fType)
+		{
+			case Wave:
+			case AIFF:
+				line = line.substring(0, line.length()-4);
+				break;
+			case MP3:
+				line = line.substring(0, line.length()-3);
+			default:
+				break;
+		}
+
+		// Trim again
+		line = line.trim();
+
+		// If has quoted contents, then get whatever is between quotes
+		int firstIdx = line.indexOf('"');
+		if (firstIdx != -1)
+		{
+			int secondIdx = line.lastIndexOf('"');
+			if (secondIdx == -1)
+				return "INVALID";
+
+			return line.substring(firstIdx+1, secondIdx);
+		}
+		else // Else, trim duplicate whitespace, split by spaces, and get the second field
+		{
+			return trimDuplicateWhitespace(line).split(" ")[1];
+		}
+	}
+
+	private String parseStringContents(String line, LineType lType)
+	{
+		line = line.trim();
+
+		// If has quoted contents, then get whatever is between quotes
+		int firstIdx = line.indexOf('"');
+		if (firstIdx != -1)
+		{
+			int secondIdx = line.lastIndexOf('"');
+			if (secondIdx == -1)
+				return "INVALID";
+
+			return line.substring(firstIdx+1, secondIdx);
+		}
+		else // Else, trim duplicate whitespace, split by spaces, and get the second field
+		{
+			return trimDuplicateWhitespace(line).split(" ")[1];
+		}
+	}
+
 	private void parseCuesheet(List<String> fileLines)
 	{
 		// Go through all lines, remove empty ones, and try to detect the line types
@@ -110,10 +191,120 @@ public class Cuesheet
 				continue;
 
 			LineType type = getLineType(line);
-			linesInFile.add(Pair.makePair(type, line));
+			this.linesInFile.add(Pair.makePair(type, line));
 		}
 
-		// TODO: Go through the cleaned results and fill in file+track data
+		boolean inFile = false;
+		File currentFile = new File();
+		Track currentTrack = new Track();
+
+		for (var lineInfo : linesInFile)
+		{
+			LineType type = lineInfo.getFirst();
+			String line = lineInfo.getSecond();
+
+			if (inFile)
+			{
+				switch (type) {
+					case Postgap:
+						currentTrack.postgap = parseTimespec(line, LineType.Postgap);
+						break;
+					case Pregap:
+						currentTrack.pregap = parseTimespec(line, LineType.Pregap);
+						break;
+					case Index:
+						// A track specification must have at least one index specifier to be valid
+						currentTrack.isValid = true;
+
+						Integer idx = Integer.parseInt(trimDuplicateWhitespace(line).trim().split(" ")[1]);
+						Timespec indexTimespec = parseTimespec(line, LineType.Index);
+						currentTrack.indices.add(Pair.makePair(idx, indexTimespec));
+						break;
+					case AudioTrack:
+						// A file should have at least one track to be valid
+						currentFile.isValid = true;
+
+						Integer newTrackIdx = Integer.parseInt(line.trim().split(" ")[1]);
+						if (currentTrack.isValid) // Push the finished track and start a new one
+						{
+							currentFile.tracksInFile.add(currentTrack);
+							currentTrack = new Track();
+							currentTrack.index = newTrackIdx;
+						}
+						else // Else, ignore the present track and start a new one
+						{
+							currentTrack = new Track();
+							currentTrack.index = newTrackIdx;
+						}
+						break;
+					case Performer:
+						currentTrack.artist = parseStringContents(line, LineType.Performer);
+						break;
+					case Songwriter:
+						currentTrack.songwriter = parseStringContents(line, LineType.Songwriter);
+						break;
+					case Title:
+						currentTrack.title = parseStringContents(line, LineType.Title);
+						break;
+					case Remark:
+						// TODO: Parse specific remarks
+						currentTrack.miscRemarks.add(line);
+						break;
+					case File:
+						// If encountered another file, start a fresh file
+						// However, this is technically out of spec and shouldn't happen,
+						// but some applications do this regardless
+
+						// If current file is valid, it can be pushed to the array
+						if (currentFile.isValid)
+						{
+							filesInCuesheet.add(currentFile);
+							currentFile = new File();
+							currentTrack = new Track();
+						}
+						else // Else, ignore the present file and make a new state
+						{
+							currentFile = new File();
+							currentTrack = new Track();
+						}
+						break;
+					default:
+						break;
+				}
+			}
+			else
+			{
+				switch (type) {
+					case File: // Switch to file mode
+						inFile = true;
+						currentFile.format = getFileType(line);
+						currentFile.path = parseFileStringContents(line, currentFile.format);
+						break;
+					case Catalog:
+						currentFile.catalog = parseStringContents(line, LineType.Catalog);
+						break;
+					case Performer:
+						currentFile.artist = parseStringContents(line, LineType.Performer);
+						break;
+					case Title:
+						currentFile.title = parseStringContents(line, LineType.Title);
+						break;
+					case Remark:
+						// TODO: Parse specific remarks
+						currentFile.miscRemarks.add(line);
+						break;
+					default:
+						break;
+				}
+			}
+		}
+
+		// Push final file and final track
+		if (currentTrack.isValid)
+			currentFile.tracksInFile.add(currentTrack);
+
+		if (currentFile.isValid)
+			filesInCuesheet.add(currentFile);
 	}
 
 	/**
@@ -136,4 +327,5 @@ public class Cuesheet
 
 		parseCuesheet(fileLines);
 	}
+
 }
