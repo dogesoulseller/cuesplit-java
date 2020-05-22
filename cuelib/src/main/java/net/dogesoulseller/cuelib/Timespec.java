@@ -1,5 +1,7 @@
 package net.dogesoulseller.cuelib;
 
+import java.util.Formatter;
+
 public class Timespec implements Comparable<Timespec>
 {
 	@Override
@@ -53,5 +55,24 @@ public class Timespec implements Comparable<Timespec>
 		minutes = _minutes;
 		seconds = _seconds;
 		frames = _frames;
+	}
+
+	public String toFfmpegSpec()
+	{
+		StringBuilder buffer = new StringBuilder();
+		Formatter fmt = new Formatter(buffer);
+
+		Integer hours = minutes < 60 ? 0 : minutes / 60;
+		Integer newMinutes = minutes < 60 ? minutes : minutes - 60;
+		Integer milliseconds = (int) ((double)frames / 75.0 * 1000.0);
+
+		// HH:MM:SS.mmm
+		fmt.format("%02d:%02d:%02d.%03d", hours, newMinutes, seconds, milliseconds);
+
+		String ffmpegSpec = buffer.toString();
+
+		fmt.close();
+
+		return ffmpegSpec;
 	}
 }
