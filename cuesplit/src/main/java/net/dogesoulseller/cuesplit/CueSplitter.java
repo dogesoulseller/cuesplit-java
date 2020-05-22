@@ -84,7 +84,8 @@ public class CueSplitter
 			StringBuilder filenameBuffer = new StringBuilder();
 			Formatter fmt = new Formatter(filenameBuffer);
 
-			fmt.format("%02d. %s.%s",
+			fmt.format("%s/%02d. %s.%s",
+				args.outputDir,
 				track.trackInfo.index,
 				track.trackInfo.title != null ? track.trackInfo.title : "",
 				args.forceLossless ? ".flac" : fileName.substring(extensionStart+1));
@@ -106,15 +107,20 @@ public class CueSplitter
 				Collections.addAll(currentFfmpegArgs, currentFfmpegArgsTmp);
 			}
 
-			// If not forcing lossless, copy format
+			// If not forcing lossless, use default options for format for now
 			if (!args.forceLossless)
 			{
-				currentFfmpegArgs.add("-c:a copy");
+				// TODO: Get user preferences about the quality settings
 			}
 			else // Else force FLAC
 			{
-				currentFfmpegArgs.add("-c:a flac");
+				currentFfmpegArgs.add("-c:a");
+				currentFfmpegArgs.add("flac");
 			}
+
+			// TODO: Get user preferences about overwriting files and don't force it
+			// Overwrite existing files
+			currentFfmpegArgs.add("-y");
 
 			// Finally append path and push to main array
 			currentFfmpegArgs.add(outputFilePath);
