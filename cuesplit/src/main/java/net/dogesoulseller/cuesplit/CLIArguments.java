@@ -34,6 +34,7 @@ public class CLIArguments
 		{
 			System.err.println("No arguments passed");
 			System.err.println(helpMessage);
+			System.exit(1);
 		}
 
 		try
@@ -45,14 +46,14 @@ public class CLIArguments
 				lastArg = i;
 
 				// -h | --help
-				if (currentArg == "-h" || currentArg == "--help")
+				if (currentArg.compareTo("-h") == 0 || currentArg.compareTo("--help") == 0)
 				{
 					System.err.println(helpMessage);
 					System.exit(1);
 				}
 
 				// -i | --input
-				if (currentArg == "-i" || currentArg == "--input")
+				if (currentArg.compareTo("-i") == 0 || currentArg.compareTo("--input") == 0)
 				{
 					inputFile = args.get(i+1);
 					i++;
@@ -60,14 +61,14 @@ public class CLIArguments
 				}
 
 				// -l | --lossless
-				if (currentArg == "l" || currentArg == "--lossless")
+				if (currentArg.compareTo("l") == 0 || currentArg.compareTo("--lossless") == 0)
 				{
 					forceLossless = true;
 					continue;
 				}
 
 				// -o | --output
-				if (currentArg == "-o" || currentArg == "--output")
+				if (currentArg.compareTo("-o") == 0 || currentArg.compareTo("--output") == 0)
 				{
 					outputDir = args.get(i+1);
 					i++;
