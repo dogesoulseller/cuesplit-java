@@ -77,8 +77,6 @@ public class CueSplitter
 
 			// Get the cuesheet path and join it with the file name of the audio file
 			String absoluteFilePath = Paths.get(Paths.get(args.inputFile).getParent().toString(), track.fileInfo.path).toString();
-			String fileName = Paths.get(track.fileInfo.path).getFileName().toString();
-			int extensionStart = fileName.lastIndexOf(".");
 
 			// Assemble filename
 			StringBuilder filenameBuffer = new StringBuilder();
@@ -88,7 +86,7 @@ public class CueSplitter
 				args.outputDir,
 				track.trackInfo.index,
 				track.trackInfo.title != null ? track.trackInfo.title : "",
-				args.forceLossless ? ".flac" : fileName.substring(extensionStart+1));
+				args.formatInfo.getFormatExtension());
 
 			String outputFilePath = filenameBuffer.toString();
 			fmt.close();
@@ -107,15 +105,154 @@ public class CueSplitter
 				Collections.addAll(currentFfmpegArgs, currentFfmpegArgsTmp);
 			}
 
-			// If not forcing lossless, use default options for format for now
+			// If not forcing lossless, use specified options or defaults
 			if (!args.forceLossless)
 			{
-				// TODO: Get user preferences about the quality settings
+				// Best to let FFmpeg autodetect wave
+				if (args.formatInfo.format != AudioFormat.WAV)
+				{
+					currentFfmpegArgs.add("-c:a");
+					switch (args.formatInfo.format)
+					{
+						default:
+						case FLAC:
+							currentFfmpegArgs.add("flac");
+							break;
+						case ALAC:
+							currentFfmpegArgs.add("alac");
+							break;
+						case TTA:
+							currentFfmpegArgs.add("tta");
+							break;
+						case AAC:
+							currentFfmpegArgs.add("libfdk_aac");
+							break;
+						case MP3:
+							currentFfmpegArgs.add("libmp3lame");
+							break;
+						case Vorbis:
+							currentFfmpegArgs.add("libvorbis");
+							break;
+						case Opus:
+							currentFfmpegArgs.add("libopus");
+							break;
+					}
+
+					if (args.formatInfo.quality != null) // Use user quality settings
+					{
+						switch (args.formatInfo.format)
+						{
+							case FLAC:
+								currentFfmpegArgs.add("-compression_level");
+								currentFfmpegArgs.add((args.formatInfo.quality == null
+									|| args.formatInfo.quality >= 10) ? "12" : args.formatInfo.quality.toString());
+								break;
+							case AAC:
+								currentFfmpegArgs.add("-vbr");
+								currentFfmpegArgs.add(Integer.toString(args.formatInfo.quality / 2 > 5 ? 5 : args.formatInfo.quality / 2));
+								break;
+							case MP3:
+								currentFfmpegArgs.add("-q:a");
+								Integer mp3Q = args.formatInfo.quality > 10 ? 0 : args.formatInfo.quality % 10;
+								mp3Q = mp3Q == 10 ? 9 : 10;
+								currentFfmpegArgs.add(mp3Q.toString());
+								break;
+							case Vorbis:
+								currentFfmpegArgs.add("-q:a");
+								currentFfmpegArgs.add(args.formatInfo.quality > 10 ? "10" : args.formatInfo.quality.toString());
+								break;
+							case Opus:
+								currentFfmpegArgs.add("-b:a");
+								currentFfmpegArgs.add(args.formatInfo.getOpusQuality());
+								break;
+							default:
+								break;
+						}
+					}
+					else if (args.formatInfo.kbps != null) // Use bitrate with clamping
+					{
+						Integer clampedBitrate = 0;
+						switch (args.formatInfo.format)
+						{
+							case AAC:
+								currentFfmpegArgs.add("-b:a");
+								clampedBitrate = args.formatInfo.kbps < 1 ? 1 : args.formatInfo.kbps;
+								currentFfmpegArgs.add(clampedBitrate.toString() + "k");
+								break;
+							case MP3:
+								currentFfmpegArgs.add("-b:a");
+								clampedBitrate = args.formatInfo.kbps < 1 ? 1 : args.formatInfo.kbps;
+								clampedBitrate = args.formatInfo.kbps > 320 ? 320 : args.formatInfo.kbps;
+								currentFfmpegArgs.add(clampedBitrate.toString() + "k");
+								break;
+							case Vorbis:
+								currentFfmpegArgs.add("-b:a");
+								clampedBitrate = args.formatInfo.kbps < 47 ? 47 : args.formatInfo.kbps;
+								clampedBitrate = args.formatInfo.kbps > 500 ? 500 : args.formatInfo.kbps;
+								currentFfmpegArgs.add(clampedBitrate.toString() + "k");
+								break;
+							case Opus:
+								currentFfmpegArgs.add("-b:a");
+								clampedBitrate = args.formatInfo.kbps < 6 ? 6 : args.formatInfo.kbps;
+								clampedBitrate = args.formatInfo.kbps > 510 ? 510 : args.formatInfo.kbps;
+								currentFfmpegArgs.add(clampedBitrate.toString() + "k");
+								break;
+							default:
+								break;
+						}
+					}
+					else // Use sane defaults
+					{
+						switch (args.formatInfo.format)
+						{
+							case FLAC:
+								currentFfmpegArgs.add("-compression_level");
+								currentFfmpegArgs.add("10");
+								break;
+							case AAC:
+								currentFfmpegArgs.add("-b:a");
+								currentFfmpegArgs.add("256k");
+								break;
+							case MP3:
+								currentFfmpegArgs.add("-q:a");
+								currentFfmpegArgs.add("0");
+								break;
+							case Vorbis:
+								currentFfmpegArgs.add("-q:a");
+								currentFfmpegArgs.add("6");
+								break;
+							case Opus:
+								currentFfmpegArgs.add("-b:a");
+								currentFfmpegArgs.add("192k");
+								break;
+							default:
+								break;
+						}
+					}
+				}
 			}
-			else // Else force FLAC
+			else // Else force lossless
 			{
-				currentFfmpegArgs.add("-c:a");
-				currentFfmpegArgs.add("flac");
+				// Best to let FFmpeg autodetect
+				if (args.formatInfo.format != AudioFormat.WAV)
+				{
+					currentFfmpegArgs.add("-c:a");
+					switch (args.formatInfo.format)
+					{
+						default:
+						case FLAC:
+							currentFfmpegArgs.add("flac");
+							break;
+						case ALAC:
+							currentFfmpegArgs.add("alac");
+							break;
+						case TTA:
+							currentFfmpegArgs.add("tta");
+							break;
+					}
+					currentFfmpegArgs.add("-compression_level");
+					currentFfmpegArgs.add((args.formatInfo.quality == null || args.formatInfo.quality >= 10) ? "12" : args.formatInfo.quality.toString());
+				}
 			}
 
 			// TODO: Get user preferences about overwriting files and don't force it

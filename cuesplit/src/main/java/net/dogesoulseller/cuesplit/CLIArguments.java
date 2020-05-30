@@ -7,23 +7,30 @@ public class CLIArguments
 	public String inputFile;
 	public String outputDir;
 	public boolean forceLossless = false;
+	public AudioFormatInfo formatInfo;
 
 	private static String helpMessage = String.join("\n", "Usage:",
 	"[java run commands] options... [input file]",
 	"Arguments:",
-	"-h | --help - view help essage",
+	"-b | --bitrate - output bitrate in kbps (only valid for lossy encodings)",
+	"-f | --format - output format [flac, wav, tta, alac, opus, vorbis, mp3, aac] (default: flac)",
+	"-h | --help - view help message",
 	"-i | --input - input file as an alternative to the [input file] specifier",
-	"-l | --lossless - force lossless output",
-	"-o | --output - output directory; if not specified, defaults to working directory");
+	"-l | --lossless - force lossless output (ignores format specified and outputs FLAC if a lossy format was specified)",
+	"-o | --output - output directory; if not specified, defaults to working directory",
+	"-q | --quality - output quality 0-10, where 0 is the worst, 10 is the best. For lossy encodings, specifies the audio quality, for lossless, the compression quality");
 
 	/**
 	 * Usage:
 	 * [java run commands] options... [input file]
 	 * Arguments:
-	 * -h | --help - view help essage
+	 * -b | --bitrate - output bitrate in kbps (only valid for lossy encodings)
+	 * -f | --format - output format [flac, wav, tta, alac, opus, vorbis, mp3, aac] (default: flac)
+	 * -h | --help - view help message
 	 * -i | --input - input file as an alternative to the [input file] specifier
-	 * -l | --lossless - force lossless output
+	 * -l | --lossless - force lossless output (ignores format specified and outputs FLAC if a lossy format was specified)
 	 * -o | --output - output directory; if not specified, defaults to working directory
+	 * -q | --quality - output quality 0-10, where 0 is the worst, 10 is the best. For lossy encodings, specifies the audio quality, for lossless, the compression quality
 	 * @param args arguments taken directly from main function
 	 */
 	public CLIArguments(ArrayList<String> args)
@@ -39,11 +46,63 @@ public class CLIArguments
 
 		try
 		{
+			formatInfo = new AudioFormatInfo();
+
 			for (int i = 0; i < args.size(); i++)
 			{
 				var currentArg = args.get(i);
 
 				lastArg = i;
+
+				// -f | --format
+				if (currentArg.compareTo("-f") == 0 || currentArg.compareTo("--format") == 0)
+				{
+					String formatStr = args.get(i+1);
+
+					if (formatStr.matches("(?i)flac"))
+					{
+						formatInfo.format = AudioFormat.FLAC;
+					}
+					else if (formatStr.matches("(?i)wav"))
+					{
+						formatInfo.format = AudioFormat.WAV;
+					}
+					else if (formatStr.matches("(?i)tta"))
+					{
+						formatInfo.format = AudioFormat.TTA;
+					}
+					else if (formatStr.matches("(?i)alac"))
+					{
+						formatInfo.format = AudioFormat.ALAC;
+					}
+					else if (formatStr.matches("(?i)opus"))
+					{
+						formatInfo.format = AudioFormat.Opus;
+					}
+					else if (formatStr.matches("(?i)vorbis"))
+					{
+						formatInfo.format = AudioFormat.Vorbis;
+					}
+					else if (formatStr.matches("(?i)mp3"))
+					{
+						formatInfo.format = AudioFormat.MP3;
+					}
+					else if (formatStr.matches("(?i)aac"))
+					{
+						formatInfo.format = AudioFormat.AAC;
+					}
+					else
+					{
+						System.err.println("Unknown format " + formatStr);
+						System.exit(1);
+					}
+				}
+
+				// -b || --bitrate
+				if (currentArg.compareTo("-b") == 0 || currentArg.compareTo("--bitrate") == 0)
+				{
+					formatInfo.kbps = Integer.parseInt(args.get(i+1));
+				}
 
 				// -h | --help
 				if (currentArg.compareTo("-h") == 0 || currentArg.compareTo("--help") == 0)
@@ -75,12 +134,31 @@ public class CLIArguments
 					continue;
 				}
 
+				// -q || --quality
+				if (currentArg.compareTo("-q") == 0 || currentArg.compareTo("--quality") == 0)
+				{
+					formatInfo.quality = Integer.parseInt(args.get(i+1));
+				}
+
 			}
 		}
 		catch (IndexOutOfBoundsException e)
 		{
 			System.err.println("Failed to parse arguments - not enough arguments passed to " + args.get(lastArg));
 			System.exit(1);
+		}
+
+		// Set format to FLAC if no format was set by user
+		if (formatInfo.format == null)
+		{
+			formatInfo.format = AudioFormat.FLAC;
+		}
+
+		// If lossless encoding was forced and a lossy format was specified, default to FLAC
+		if (forceLossless && (formatInfo.format == AudioFormat.Opus || formatInfo.format == AudioFormat.Vorbis ||
+		  formatInfo.format == AudioFormat.MP3 || formatInfo.format == AudioFormat.AAC))
+		{
+			formatInfo.format = AudioFormat.FLAC;
 		}
 
 		// Set input file to the last arg
