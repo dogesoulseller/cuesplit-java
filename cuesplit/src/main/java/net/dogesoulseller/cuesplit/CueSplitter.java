@@ -255,9 +255,15 @@ public class CueSplitter
 				}
 			}
 
-			// TODO: Get user preferences about overwriting files and don't force it
-			// Overwrite existing files
-			currentFfmpegArgs.add("-y");
+			// Don't overwrite existing files if specified
+			if (args.noOverwrite)
+			{
+				currentFfmpegArgs.add("-n");
+			}
+			else
+			{
+				currentFfmpegArgs.add("-y");
+			}
 
 			// Finally append path and push to main array
 			currentFfmpegArgs.add(outputFilePath);

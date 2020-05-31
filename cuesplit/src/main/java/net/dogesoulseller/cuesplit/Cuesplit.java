@@ -17,12 +17,10 @@ public class Cuesplit {
 
 		ArrayList<ProcessBuilder> processBuilders = new ArrayList<>();
 
-		// TODO: Get user preferences about quiet or verbose output
-		// TODO: Search for ffmpeg executable on Windows and allow setting an option with its location
 		for (var track : splitter.tracks)
 		{
 			ArrayList<String> ffmpegStartArgs = new ArrayList<>();
-			ffmpegStartArgs.add("ffmpeg");
+			ffmpegStartArgs.add(cliArgs.ffmpegExecutable);
 			ffmpegStartArgs.add("-v");
 			ffmpegStartArgs.add("quiet");
 			ffmpegStartArgs.add("-nostats");

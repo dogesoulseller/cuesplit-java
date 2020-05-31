@@ -4,33 +4,39 @@ import java.util.ArrayList;
 
 public class CLIArguments
 {
+	public String ffmpegExecutable;
 	public String inputFile;
 	public String outputDir;
 	public boolean forceLossless = false;
 	public AudioFormatInfo formatInfo;
+	public boolean noOverwrite = false;
 
 	private static String helpMessage = String.join("\n", "Usage:",
 	"[java run commands] options... [input file]",
 	"Arguments:",
 	"-b | --bitrate - output bitrate in kbps (only valid for lossy encodings)",
+	"-e | --ffmpeg-executable - custom ffmpeg executable location",
 	"-f | --format - output format [flac, wav, tta, alac, opus, vorbis, mp3, aac] (default: flac)",
 	"-h | --help - view help message",
 	"-i | --input - input file as an alternative to the [input file] specifier",
 	"-l | --lossless - force lossless output (ignores format specified and outputs FLAC if a lossy format was specified)",
 	"-o | --output - output directory; if not specified, defaults to working directory",
-	"-q | --quality - output quality 0-10, where 0 is the worst, 10 is the best. For lossy encodings, specifies the audio quality, for lossless, the compression quality");
+	"-q | --quality - output quality 0-10, where 0 is the worst, 10 is the best. For lossy encodings, specifies the audio quality, for lossless, the compression quality",
+	"--no-overwrite - don't overwrite existing files");
 
 	/**
 	 * Usage:
 	 * [java run commands] options... [input file]
 	 * Arguments:
 	 * -b | --bitrate - output bitrate in kbps (only valid for lossy encodings)
+	 * -e | --ffmpeg-executable - custom ffmpeg executable location
 	 * -f | --format - output format [flac, wav, tta, alac, opus, vorbis, mp3, aac] (default: flac)
 	 * -h | --help - view help message
 	 * -i | --input - input file as an alternative to the [input file] specifier
 	 * -l | --lossless - force lossless output (ignores format specified and outputs FLAC if a lossy format was specified)
 	 * -o | --output - output directory; if not specified, defaults to working directory
 	 * -q | --quality - output quality 0-10, where 0 is the worst, 10 is the best. For lossy encodings, specifies the audio quality, for lossless, the compression quality
+	 * --no-overwrite - don't overwrite existing files
 	 * @param args arguments taken directly from main function
 	 */
 	public CLIArguments(ArrayList<String> args)
@@ -53,6 +59,18 @@ public class CLIArguments
 				var currentArg = args.get(i);
 
 				lastArg = i;
+
+				// -b || --bitrate
+				if (currentArg.compareTo("-b") == 0 || currentArg.compareTo("--bitrate") == 0)
+				{
+					formatInfo.kbps = Integer.parseInt(args.get(i+1));
+				}
+
+				// -e || --ffmpeg-executable
+				if (currentArg.compareTo("-e") == 0 || currentArg.compareTo("--ffmpeg-executable") == 0)
+				{
+					ffmpegExecutable = args.get(i+1);
+				}
 
 				// -f | --format
 				if (currentArg.compareTo("-f") == 0 || currentArg.compareTo("--format") == 0)
@@ -98,12 +116,6 @@ public class CLIArguments
 					}
 				}
 
-				// -b || --bitrate
-				if (currentArg.compareTo("-b") == 0 || currentArg.compareTo("--bitrate") == 0)
-				{
-					formatInfo.kbps = Integer.parseInt(args.get(i+1));
-				}
-
 				// -h | --help
 				if (currentArg.compareTo("-h") == 0 || currentArg.compareTo("--help") == 0)
 				{
@@ -140,12 +152,25 @@ public class CLIArguments
 					formatInfo.quality = Integer.parseInt(args.get(i+1));
 				}
 
+				// --no-overwrite
+				if (currentArg.compareTo("--no-overwrite") == 0)
+				{
+					noOverwrite = true;
+				}
+
 			}
 		}
 		catch (IndexOutOfBoundsException e)
 		{
 			System.err.println("Failed to parse arguments - not enough arguments passed to " + args.get(lastArg));
 			System.exit(1);
+		}
+
+		// Set ffmpeg executable path to default
+		if (ffmpegExecutable == null)
+		{
+			boolean isWindows = System.getProperty("os.name").matches("Windows.*");
+			ffmpegExecutable = isWindows ? "ffmpeg.exe" : "ffmpeg";
 		}
 
 		// Set format to FLAC if no format was set by user
