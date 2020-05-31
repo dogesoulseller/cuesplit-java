@@ -74,6 +74,38 @@ public class Cuesheet
 			if (regexes.remarkGenre.matcher(line).matches())
 				return LineType.RemarkGenre;
 
+			// REM COMMENT
+			if (regexes.remarkComment.matcher(line).matches())
+				return LineType.RemarkComment;
+
+			// REM COMPILATION
+			if (regexes.remarkCompilation.matcher(line).matches())
+				return LineType.RemarkCompilation;
+
+			// REM COMPOSER
+			if (regexes.remarkComposer.matcher(line).matches())
+				return LineType.RemarkComposer;
+
+			// REM DISCID
+			if (regexes.remarkDiscID.matcher(line).matches())
+				return LineType.RemarkDiscID;
+
+			// REM DISCNUMBER
+			if (regexes.remarkDiscNumber.matcher(line).matches())
+				return LineType.RemarkDiscNumber;
+
+			// REM REPLAYGAIN_ALBUM_GAIN
+			if (regexes.remarkReplaygainAlbumGain.matcher(line).matches())
+				return LineType.RemarkReplaygainAlbumGain;
+
+			// REM REPLAYGAIN_ALBUM_PEAK
+			if (regexes.remarkReplaygainAlbumPeak.matcher(line).matches())
+				return LineType.RemarkReplaygainAlbumPeak;
+
+			// REM TOTALDISCS
+			if (regexes.remarkTotalDiscs.matcher(line).matches())
+				return LineType.RemarkTotalDiscs;
+
 			// Just REM
 			return LineType.Remark;
 		}
@@ -176,9 +208,26 @@ public class Cuesheet
 
 			return line.substring(firstIdx+1, secondIdx);
 		}
-		else // Else, trim duplicate whitespace, split by spaces, and get the second field
+		else // Else, trim duplicate whitespace and split by spaces
 		{
-			return trimDuplicateWhitespace(line).split(" ")[1];
+			switch (lType) // If the line is a remark, pick third field
+			{
+				case RemarkComment:
+				case RemarkCompilation:
+				case RemarkComposer:
+				case RemarkDate:
+				case RemarkDiscID:
+				case RemarkDiscNumber:
+				case RemarkGenre:
+				case RemarkReplaygainAlbumGain:
+				case RemarkReplaygainAlbumPeak:
+				case RemarkTotalDiscs:
+				case Remark:
+					return trimDuplicateWhitespace(line).split(" ")[2];
+
+				default: // If it isn't a remark, pick second field
+					return trimDuplicateWhitespace(line).split(" ")[1];
+			}
 		}
 	}
 
@@ -205,7 +254,8 @@ public class Cuesheet
 
 			if (inFile)
 			{
-				switch (type) {
+				switch (type)
+				{
 					case Postgap:
 						currentTrack.postgap = parseTimespec(line, LineType.Postgap);
 						break;
@@ -274,7 +324,8 @@ public class Cuesheet
 			}
 			else
 			{
-				switch (type) {
+				switch (type)
+				{
 					case File: // Switch to file mode
 						inFile = true;
 						currentFile.format = getFileType(line);
@@ -289,8 +340,37 @@ public class Cuesheet
 					case Title:
 						currentFile.title = parseStringContents(line, LineType.Title);
 						break;
+					case RemarkComment:
+						currentFile.comment = parseStringContents(line, LineType.RemarkComment);
+						break;
+					case RemarkCompilation:
+						currentFile.compilation = parseStringContents(line, LineType.RemarkCompilation);
+						break;
+					case RemarkComposer:
+						currentFile.composer = parseStringContents(line, LineType.RemarkComposer);
+						break;
+					case RemarkDate:
+						currentFile.date = parseStringContents(line, LineType.RemarkDate);
+						break;
+					case RemarkDiscID:
+						currentFile.discID = parseStringContents(line, LineType.RemarkDiscID);
+						break;
+					case RemarkDiscNumber:
+						currentFile.discNumber = parseStringContents(line, LineType.RemarkDiscNumber);
+						break;
+					case RemarkGenre:
+						currentFile.genre = parseStringContents(line, LineType.RemarkGenre);
+						break;
+					case RemarkReplaygainAlbumGain:
+						currentFile.replaygainAlbumGain = parseStringContents(line, LineType.RemarkReplaygainAlbumGain);
+						break;
+					case RemarkReplaygainAlbumPeak:
+						currentFile.replaygainAlbumPeak = parseStringContents(line, LineType.RemarkReplaygainAlbumPeak);
+						break;
+					case RemarkTotalDiscs:
+						currentFile.totalDiscs = parseStringContents(line, LineType.RemarkTotalDiscs);
+						break;
 					case Remark:
-						// TODO: Parse specific remarks
 						currentFile.miscRemarks.add(line);
 						break;
 					default:

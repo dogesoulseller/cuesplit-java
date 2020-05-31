@@ -23,8 +23,16 @@ public class CuesheetRegexes
 	public Pattern filetypeAIFF;
 	public Pattern filetypeMP3;
 
+	public Pattern remarkComment;
+	public Pattern remarkCompilation;
+	public Pattern remarkComposer;
 	public Pattern remarkDate;
+	public Pattern remarkDiscID;
+	public Pattern remarkDiscNumber;
 	public Pattern remarkGenre;
+	public Pattern remarkReplaygainAlbumGain;
+	public Pattern remarkReplaygainAlbumPeak;
+	public Pattern remarkTotalDiscs;
 
 	public Pattern duplicateWhitespace;
 
@@ -45,8 +53,16 @@ public class CuesheetRegexes
 		filetypeAIFF = Pattern.compile("^\\s*FILE\\s+\"?.*\"?\\s++AIFF\\s*", Pattern.CASE_INSENSITIVE);
 		filetypeMP3 = Pattern.compile("^\\s*FILE\\s+\"?.*\"?\\s++MP3\\s*", Pattern.CASE_INSENSITIVE);
 
+		remarkComment = Pattern.compile("^\\s*REM\\s+COMMENT\\s+.*\\s*", Pattern.CASE_INSENSITIVE);
+		remarkCompilation = Pattern.compile("^\\s*REM\\s+COMPILATION\\s+.*\\s*", Pattern.CASE_INSENSITIVE);
+		remarkComposer = Pattern.compile("^\\s*REM\\s+COMPOSER\\s+.*\\s*", Pattern.CASE_INSENSITIVE);
 		remarkDate = Pattern.compile("^\\s*REM\\s+DATE\\s+.*\\s*", Pattern.CASE_INSENSITIVE);
+		remarkDiscID = Pattern.compile("^\\s*REM\\s+DISCID\\s+.*\\s*", Pattern.CASE_INSENSITIVE);
+		remarkDiscNumber = Pattern.compile("^\\s*REM\\s+DISCNUMBER\\s+.*\\s*", Pattern.CASE_INSENSITIVE);
 		remarkGenre = Pattern.compile("^\\s*REM\\s+GENRE\\s+.*\\s*", Pattern.CASE_INSENSITIVE);
+		remarkReplaygainAlbumGain = Pattern.compile("^\\s*REM\\s+REPLAYGAIN_ALBUM_GAIN\\s+.*\\s*", Pattern.CASE_INSENSITIVE);
+		remarkReplaygainAlbumPeak = Pattern.compile("^\\s*REM\\s+REPLAYGAIN_ALBUM_PEAK\\s+.*\\s*", Pattern.CASE_INSENSITIVE);
+		remarkTotalDiscs = Pattern.compile("^\\s*REM\\s+TOTALDISCS\\s+.*\\s*", Pattern.CASE_INSENSITIVE);
 
 		duplicateWhitespace = Pattern.compile("\\s+");
 	}

@@ -15,7 +15,15 @@ public enum LineType
 	Songwriter,
 	Title,
 	AudioTrack,
+	RemarkComment,
+	RemarkCompilation,
+	RemarkComposer,
 	RemarkDate,
+	RemarkDiscID,
+	RemarkDiscNumber,
 	RemarkGenre,
+	RemarkReplaygainAlbumGain,
+	RemarkReplaygainAlbumPeak,
+	RemarkTotalDiscs,
 	Unknown
 }
